@@ -51,6 +51,8 @@ st.title("Reformat General Ledger")
 category = st.selectbox("Select category:", ["Select a category", "SQL", "AutoCount"])
 
 uploaded_file = st.file_uploader("Choose an Excel file", type=["xlsx", "xls"])
+status = st.empty()
+
 
 # SQL GL
 if category == "SQL" and uploaded_file is not None:
@@ -72,8 +74,7 @@ if category == "SQL" and uploaded_file is not None:
 
     file = pd.ExcelFile(uploaded_file)
 
-    status = st.empty()
-    status.success("Start Processing...")  # message
+    status.success("Processing...")  # message
 
     # Loop through sheets and append to combined_df
     for each_sheet in file.sheet_names:
@@ -143,13 +144,12 @@ if category == "SQL" and uploaded_file is not None:
     status.success("Done!")  # first message
 
 elif category == "AutoCount" and uploaded_file is not None:
-    # Initialize
     subAccCode, subAccName = "", ""
     final_data = []
-    # response = ocr(uploaded_file)
-    # print(response)
-
+    
     df = pd.read_excel(uploaded_file, sheet_name=0)
+    
+    status.success("Processing...")  # message
 
     df = df.drop(df.columns[0], axis=1)
     df = df.iloc[10:]  # drop first 10 rows
@@ -244,3 +244,5 @@ elif category == "AutoCount" and uploaded_file is not None:
     ]
     clean_df = pd.DataFrame(final_data, columns=final_header)
     output_table(clean_df)
+    status.success("Done!")
+
