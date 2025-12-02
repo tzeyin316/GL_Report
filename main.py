@@ -34,7 +34,7 @@ def convert_df_to_excel(df):
 
 def output_table(clean_df):
     st.write("Clean Table:")
-    st.dataframe(clean_df, width="stretch")
+    st.dataframe(clean_df)
 
     excel_binary = convert_df_to_excel(clean_df)
 
@@ -46,6 +46,11 @@ def output_table(clean_df):
     )
 
 # main section
+st.set_page_config(
+    page_title="GL Report",
+    layout="wide",
+)
+
 st.title("Reformat General Ledger")
 
 category = st.selectbox("Select category:", ["Select a category", "SQL", "AutoCount"])
@@ -74,10 +79,10 @@ if category == "SQL" and uploaded_file is not None:
 
     file = pd.ExcelFile(uploaded_file)
 
-    status.success("Processing...")  # message
+    my_bar = st.progress(0, text="Processing...")
 
     # Loop through sheets and append to combined_df
-    for each_sheet in file.sheet_names:
+    for idx, each_sheet in enumerate(file.sheet_names):
         df = pd.read_excel(file, sheet_name=each_sheet)
         df = df.drop(df.columns[1], axis=1)
         data_arr = df.values  # convert to numpy array
@@ -136,12 +141,13 @@ if category == "SQL" and uploaded_file is not None:
                     ]
                 )
 
+        my_bar.progress(int((idx)/len(file.sheet_names)*100), text="Processing...")
+
     clean_df = pd.DataFrame(final_data, columns=final_header)
     clean_df = clean_df.iloc[:-8]
 
     output_table(clean_df)
-
-    status.success("Done!")  # first message
+    my_bar.empty()
 
 elif category == "AutoCount" and uploaded_file is not None:
     subAccCode, subAccName = "", ""
@@ -149,7 +155,8 @@ elif category == "AutoCount" and uploaded_file is not None:
     
     df = pd.read_excel(uploaded_file, sheet_name=0)
     
-    status.success("Processing...")  # message
+    my_bar = st.progress(0, text="Processing...")
+
 
     df = df.drop(df.columns[0], axis=1)
     df = df.iloc[10:]  # drop first 10 rows
@@ -190,8 +197,7 @@ elif category == "AutoCount" and uploaded_file is not None:
     balance_end  = credit_end + header_cell[6]
 
     while i < len(values):
-        row = values[i]   
-        print(i)
+        row = values[i]  
 
         if isinstance(row[0], str) and row[0].strip().startswith("Account Code:"):
             account = [x for x in row if not (isinstance(x, float) and np.isnan(x))]
@@ -225,9 +231,10 @@ elif category == "AutoCount" and uploaded_file is not None:
                 desc2 = third_row[desc_index]
                 i = i+4
 
-            print(date, subAccCode, subAccName, journal, ref1, ref2, desc1, desc2, debit, credit, balance)
             final_data.append([date, subAccCode, subAccName, journal, ref1, ref2, desc1, desc2, debit, credit, balance])
-
+        
+        percent_complete = int(i / len(values) * 100)
+        my_bar.progress(percent_complete, text="Processing...") 
 
     final_header = [
         "Date",
@@ -244,5 +251,5 @@ elif category == "AutoCount" and uploaded_file is not None:
     ]
     clean_df = pd.DataFrame(final_data, columns=final_header)
     output_table(clean_df)
-    status.success("Done!")
+    my_bar.empty()
 
